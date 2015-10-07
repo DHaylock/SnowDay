@@ -9,10 +9,10 @@ bool getTweets = false;
 int resistorValue = 0;
 char value[5];
 
-String response;
 //---------------------------------------------------
 void setup() {
-    Spark.connect();
+    Serial.begin(9600);
+    // Spark.connect();
     pinMode(led, OUTPUT);
     pinMode(photoresistor,INPUT);
     pinMode(pwr,OUTPUT);
@@ -26,7 +26,7 @@ void loop() {
         digitalWrite(led, HIGH);
         if(getTweets == false) {
             Spark.publish("Flag", "Lock",60,PRIVATE);
-            getTweets = true;
+            get();
         }
     }
     else if(resistorValue > 11) {
@@ -40,13 +40,15 @@ void loop() {
 
     }
     sprintf(value,"%d",resistorValue);
-    Spark.publish("Tweets", value,60,PRIVATE);
+    // Spark.publish("LDR", value,60,PRIVATE);
     delay(500);
 }
 //---------------------------------------------------
 void get() {
-    response = "";
+    String response = "";
     int statusCode = client.get("", &response);
+    Serial.println(statusCode);
+    Serial.println(response);
     Spark.publish("Number of Tweets",response,60,PRIVATE);
     getTweets = true;
 }
