@@ -25,8 +25,8 @@ $connection = new tmhOAuth(array(
 
 // Request API, GET the tweets
 $http_code = $connection->request('GET',
-    $connection->url('1.1/search/tweets'),
-    array('q' => $query,'count' => '100', 'lang' => 'en'));
+    $connection->url('1.1/statuses/user_timeline'),
+    array('count' => '100', 'lang' => 'en'));
 
 // Request was successful
 if ($http_code == 200) {
@@ -34,20 +34,21 @@ if ($http_code == 200) {
 
     // Split the json
     $response = json_decode($connection->response['response'],true);
-    $tweet_data = $response['statuses'];
+    $tweet_data = $response;
 
     // Get Today's date
     $today = date("Y-m-d");
 
     // Loop through the tweets
     foreach ($tweet_data as $tweet) {
-
         // If the created_at value of the tweet is equal to today's value
         if(date("Y-m-d",strtotime($tweet['created_at'])) == $today) {
-            // Increment the Counter
-            $count++;
+            if(strpos($tweet['text'], $query) !== false) {
+                $count++;
+            }
         }
     }
+
     // Display the end value
     print $count;
     exit;
@@ -55,11 +56,13 @@ if ($http_code == 200) {
 // Handle errors from API request
 else {
     if ($http_code == 429) {
-        print 'Error: Twitter API rate limit reached';
+        // print 'Error: Twitter API rate limit reached';
+        print -1;
         exit;
     }
     else {
-        print 'Error: Twitter was not able to process that request';
+        print -2;
+        // print 'Error: Twitter was not able to process that request';
         exit;
     }
     exit;
