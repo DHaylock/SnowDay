@@ -130,10 +130,14 @@ void errorFlash(int whichError){
 }
 //---------------------------------------------------
 void successGlow(int r,int g, int b){
-    for(int i=0; i<strip.numPixels(); i++) {
-        strip.setPixelColor(i, strip.Color(r,g,b));
+    for(int fadeValue = 0 ; fadeValue <= 255; fadeValue +=1) {
+        for(int i=0; i<strip.numPixels(); i++) {
+            // sets the value (range from 0 to 255):
+            strip.setPixelColor(i, strip.Color(fadeValue,fadeValue,fadeValue));
+        }
+        strip.show();
+        delay(10);
     }
-    strip.show();
 }
 //---------------------------------------------------
 void allOff(){
