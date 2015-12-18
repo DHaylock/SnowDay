@@ -1,26 +1,28 @@
+// This #include statement was automatically added by the Particle IDE.
 #include "neopixel.h"
 #include "rest_client.h"
 
-RestClient client = RestClient("");
-
+// RestClient client = RestClient("dev.tommetcalfe.net");
+RestClient client = RestClient("dev.tommetcalfe.net");
 #define PIXEL_PIN D2
-#define PIXEL_COUNT 16
+#define PIXEL_COUNT 8
 #define PIXEL_TYPE WS2812B
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
 
 int photoresistor = A0;
-int pwr = A5;
+int pwr = A1;
 int led = D7;
 bool getTweets = false;
+bool gotResponse = false;
 int resistorValue = 0;
 char value[5];
 
 //---------------------------------------------------
 void setup() {
     Serial.begin(9600);
-    strip.begin();
     Serial.println("Starting...");
+    strip.begin();
     strip.show();
 
     Spark.publish("Start up", "Starting",60,PRIVATE);
@@ -34,13 +36,14 @@ void setup() {
 void loop() {
     resistorValue = analogRead(photoresistor);
 
-    if(resistorValue < 10 && !getTweets){
-        // Spark.publish("Flag", "Lock",60,PRIVATE);
-        get();
+    if(resistorValue > 6 && !getTweets){
+        // Spark.publish("Flag", "Get Data",60,PRIVATE);
+            // getTweets = true;
+            get();
     }
-    else if(resistorValue > 11 && getTweets) {
+    else if(resistorValue < 5  && getTweets) {
         allOff();
-        // Spark.publish("Flag", "Unlock",60,PRIVATE);
+        // Spark.publish("Flag", "Reset",60,PRIVATE);
         getTweets = false;
     }
     else {
@@ -49,30 +52,33 @@ void loop() {
     sprintf(value,"%d",resistorValue);
     //  For Debug Purposes only
     //  Spark.publish("Resistor",value,60,PRIVATE);
-    Serial.println("...");
+    // Serial.println("...");
     delay(500);
 }
+String response;
 //---------------------------------------------------
 void get() {
     bail:
-    String response = "";
-    int statusCode = client.get("", &response);
+    response = "";
+    String body = "";
+    // client.setHeader("X-Test-Header: true");
+    int statusCode = client.get("/searchTwitter.php", &response);
+    Serial.println("RESP");
+    Serial.println(response);
     char code[20];
 
     sprintf(code,"%d",statusCode);
-    // Spark.publish("Status Code",code,60,PRIVATE);
+    //Spark.publish("Status Code",code,60,PRIVATE);
     if(statusCode == 0) {
         delay(500);
         goto bail;
     }
     else {
         if(response != "null") {
-            int uniqueResponseCode = response.toInt();
             Spark.publish("Number of Tweets",response,60,PRIVATE);
+            int uniqueResponseCode = response.toInt();
             if(uniqueResponseCode > 0) {
                 successGlow(50, 45, 252);
-                delay(10000);
-                allOff();
                 getTweets = true;
             }
             else if (uniqueResponseCode == 0) {
@@ -137,6 +143,16 @@ void successGlow(int r,int g, int b){
         }
         strip.show();
         delay(10);
+    }
+    // Wait a while
+    delay(5000);
+    for(int fadeValue = 255 ; fadeValue >= 0; fadeValue -=1) {
+        for(int i=0; i<strip.numPixels(); i++) {
+            // sets the value (range from 0 to 255):
+            strip.setPixelColor(i, strip.Color(fadeValue,fadeValue,fadeValue));
+        }
+        strip.show();
+        delay(3);
     }
 }
 //---------------------------------------------------
