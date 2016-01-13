@@ -18,6 +18,12 @@ bool gotResponse = false;
 int resistorValue = 0;
 char value[5];
 
+bool calibrated = false;
+
+int sensorValue = 0;         // the sensor value
+int sensorMin = 1023;        // minimum sensor value
+int sensorMax = 0;           // maximum sensor value
+
 //---------------------------------------------------
 void setup() {
     Serial.begin(9600);
@@ -31,29 +37,62 @@ void setup() {
     pinMode(photoresistor,INPUT);
     pinMode(pwr,OUTPUT);
     digitalWrite(pwr,HIGH);
+
+    // calibrate during the first five seconds
+      while (millis() < 10000) {
+        sensorValue = analogRead(photoresistor);
+
+
+        // record the maximum sensor value
+        if (sensorValue > sensorMax) {
+          sensorMax = sensorValue;
+        }
+
+        // record the minimum sensor value
+        if (sensorValue < sensorMin) {
+          sensorMin = sensorValue;
+        }
+        //Serial.println("Calibration Value");
+        //Serial.println(sensorValue);
+
+        for(int i=0; i<strip.numPixels(); i++) {
+            strip.setPixelColor(i, strip.Color(255,0,0));
+        }
+      }
 }
 //---------------------------------------------------
 void loop() {
-    resistorValue = analogRead(photoresistor);
 
-    if(resistorValue > 6 && !getTweets){
-        // Spark.publish("Flag", "Get Data",60,PRIVATE);
-            // getTweets = true;
-            get();
+    if(millis() > 10000 && !calibrated) {
+        Serial.println("Calibrated");
+        Serial.println("Minimum Value");
+        Serial.println(sensorMin);
+        calibrated = true;
     }
-    else if(resistorValue < 5  && getTweets) {
-        allOff();
-        // Spark.publish("Flag", "Reset",60,PRIVATE);
-        getTweets = false;
-    }
-    else {
 
+    if(calibrated){
+        resistorValue = analogRead(photoresistor);
+
+        if(resistorValue > (sensorMin+1) && !getTweets){
+            // Spark.publish("Flag", "Get Data",60,PRIVATE);
+                // getTweets = true;
+                get();
+        }
+        else if(resistorValue < sensorMin  && getTweets) {
+            allOff();
+            // Spark.publish("Flag", "Reset",60,PRIVATE);
+            getTweets = false;
+        }
+        else {
+
+        }
+        sprintf(value,"%d",resistorValue);
+        //  For Debug Purposes only
+        //  Spark.publish("Resistor",value,60,PRIVATE);
+        // Serial.println("...");
+        Serial.println(resistorValue);
+        delay(500);
     }
-    sprintf(value,"%d",resistorValue);
-    //  For Debug Purposes only
-    //  Spark.publish("Resistor",value,60,PRIVATE);
-    // Serial.println("...");
-    delay(500);
 }
 String response;
 //---------------------------------------------------
